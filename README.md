@@ -1,5 +1,5 @@
 # MCKING-STAR
-Proyek RPL
+Proyek Pengembangan Perangkat Lunak Tangkas
 
 # 🏸 Sistem Manajemen Badminton
 
