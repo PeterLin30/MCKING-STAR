@@ -3,7 +3,7 @@ Proyek RPL
 
 # 🏸 Sistem Manajemen Badminton
 
-Sistem Manajemen Badminton adalah sebuah aplikasi berbasis web komprehensif yang dirancang untuk mendigitalisasi dan mengotomatisasi seluruh operasional lapangan atau komunitas badminton.
+Sistem Manajemen Badminton adalah sebuah inovasi teknologi canggih berupa aplikasi berbasis web yang dirancang secara komprehensif dengan tujuan utama untuk mendigitalisasi serta mengotomatisasi seluruh spektrum operasional yang berkaitan dengan pengelolaan lapangan bulutangkis atau bahkan seluruh komunitas penggemar dan praktisi olahraga bulutangkis 
 
 Ide utamanya adalah memecahkan masalah klasik dalam manajemen olahraga: jadwal yang bentrok (*double-booking*), kesulitan menagih uang patungan (*split bill*), lambatnya pencatatan manual, dan kurangnya data analitik untuk pemilik bisnis. 
 
