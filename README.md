@@ -24,7 +24,7 @@ Sistem ini menjembatani kebutuhan pemain (kemudahan *booking*, pembayaran, dan p
 9. **Deposit Wallet (Sistem Saldo):** Dompet digital internal di mana anggota bisa *top-up* dana untuk mempercepat proses *checkout* tanpa perlu verifikasi bank setiap saat.
 10. **Transaction History:** Pencatatan mutasi saldo (uang masuk dari *top-up*, uang keluar untuk *booking* atau bayar utang *split bill*).
 11. **Tracking Status Bayar (Lunas/Hutang):** Sistem pelacakan individu untuk setiap peserta di satu pesanan, memastikan tidak ada yang "kabur" dari patungan.
-12. **WhatsApp Reminder:** Integrasi API (via Fonnte/Twilio) untuk mengirim pesan pengingat otomatis ke WhatsApp peserta 2 jam sebelum jadwal main.
+12. Pengingat WhatsApp: Integrasi API (melalui Fonnte/Twilio) untuk pengiriman pesan pengingat otomatis kepada peserta melalui WhatsApp, dua jam sebelum jadwal pertandingan.
 13. **QR Code Check-in:** Fitur absensi modern di mana sistem menghasilkan kode QR untuk di-*scan* di lokasi lapangan guna memvalidasi kehadiran pemain.
 14. **Revenue Dashboard (Laporan Keuangan):** Grafik analitik untuk admin yang merangkum total pendapatan harian, mingguan, hingga bulanan.
 15. **User Retention Tracking:** Analitik untuk melacak *member* paling aktif dan loyal, yang nantinya bisa digunakan admin untuk memberikan diskon atau *reward* khusus.
