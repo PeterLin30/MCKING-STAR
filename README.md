@@ -10,6 +10,8 @@
 
 Sistem ini mengawinkan kebutuhan **Pemain** (kemudahan *booking*, pembayaran praktis, dan pengingat jadwal) dengan kebutuhan **Pengelola** (dasbor keuangan, *tiered pricing* untuk optimalisasi slot kosong, dan retensi pelanggan) dalam satu ekosistem *real-time* yang ditenagai oleh teknologi modern.
 
+Sistem Manajemen Badminton bukan sekadar aplikasi reservasi, melainkan fondasi digital bagi ekosistem olahraga yang lebih modern, transparan, dan berkelanjutan. Dengan fitur-fitur yang saling terintegrasi, pengelola dapat mengoptimalkan pendapatan sekaligus meningkatkan pengalaman pemain. Roadmap 27 hari ini menunjukkan bahwa transformasi digital dalam manajemen fasilitas olahraga bisa diwujudkan secara cepat, terukur, dan berdampak nyata.
+
 ---
 
 ## 🌟 20 Fitur Unggulan (Core & Extended)
