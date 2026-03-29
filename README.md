@@ -1,92 +1,102 @@
-MCKING-STAR
+# 🏸 MCKING-STAR: Agile Badminton Management System
 
-Proyek Pengembangan Perangkat Lunak Tangkas
-🏸 Sistem Manajemen Badminton
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Status](https://img.shields.io/badge/status-in%20active%20development-success.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-Sistem Manajemen Badminton merupakan aplikasi berbasis web yang dirancang secara komprehensif untuk mendigitalisasi dan mengotomatisasi operasional pengelolaan lapangan bulutangkis. Lebih dari sekadar alat bantu administratif, inovasi ini hadir sebagai wadah terpadu yang menghubungkan bisnis pengelola fasilitas dengan ekosistem komunitas penggemar dan praktisi olahraga tersebut.
+> **Mendigitalisasi Lapangan, Mengkoneksikan Pemain, Mengoptimalkan Bisnis.**
 
-Ide utamanya adalah memecahkan masalah klasik dalam manajemen olahraga: jadwal yang bentrok (double-booking), kesulitan menagih uang patungan (split bill), lambatnya pencatatan manual, dan kurangnya data analitik untuk pemilik bisnis.
+**MCKING-STAR** bukan sekadar alat administratif biasa; ini adalah platform *Sistem Manajemen Badminton* berbasis web yang dirancang secara komprehensif untuk merevolusi operasional fasilitas olahraga. Kami hadir untuk memecahkan masalah klasik: jadwal bentrok (*double-booking*), drama menagih uang patungan (*split bill*), pencatatan manual yang lambat, dan minimnya wawasan data bagi pemilik bisnis.
 
-Sistem ini menjembatani kebutuhan pemain (kemudahan booking, pembayaran, dan pengingat) dengan kebutuhan pengelola/admin (laporan keuangan, optimalisasi jam kosong melalui tiered pricing, dan retensi pelanggan) dalam satu ekosistem yang real-time dan terintegrasi dengan teknologi modern (IoT/QR Code & WhatsApp API).
+Sistem ini mengawinkan kebutuhan **Pemain** (kemudahan *booking*, pembayaran praktis, dan pengingat jadwal) dengan kebutuhan **Pengelola** (dasbor keuangan, *tiered pricing* untuk optimalisasi slot kosong, dan retensi pelanggan) dalam satu ekosistem *real-time* yang ditenagai oleh teknologi modern.
 
-🌟 15 Fitur Penting dalam Sistem
+---
 
-Manajemen Role Pengguna: Sistem autentikasi dengan pembagian hak akses yang jelas antara Admin (pengelola), Member (anggota rutin), dan Guest (tamu).
+## 🌟 20 Fitur Unggulan (Core & Extended)
 
-Manajemen Data Lapangan (CRUD): Fitur bagi admin untuk menambah, mengedit, atau menonaktifkan lapangan beserta spesifikasinya (tipe karpet/kayu).
+Kami merancang ekosistem yang holistik. Berikut adalah 20 pilar utama penopang MCKING-STAR:
 
-Visual Schedule (Kalender Interaktif): Tampilan jadwal berbentuk grid waktu yang intuitif sehingga pemain bisa melihat slot kosong secara visual.
+### 🛡️ Manajemen & Fondasi
+1. **Role Management System:** Autentikasi ketat dengan pembagian akses jelas antara *Admin* (pengelola), *Member* (anggota rutin), dan *Guest* (tamu).
+2. **Master Data Lapangan (CRUD):** Kontrol penuh admin untuk mengatur spesifikasi lapangan (karpet/kayu/semen) beserta konfigurasi harga dasarnya.
 
-Booking Instant (Real-Time): Fitur pemesanan lapangan langsung di mana ketersediaan slot di-lock secara real-time saat dipilih.
+### 📅 Sistem Pemesanan Jantung (Core Engine)
+3. **Interactive Visual Schedule:** Kalender *grid* waktu yang intuitif. Sekali lirik, pemain tahu persis slot mana yang masih kosong.
+4. **Real-Time Instant Booking:** *Lock* slot lapangan seketika saat dipilih, mencegah rebutan jadwal di detik yang sama.
+5. **Collision Detection (Anti-Bentrok):** Validasi *backend* tingkat dewa yang mustahil kebobolan. Tidak ada lagi cerita dua tim datang di jam yang sama.
+6. **Fair-Play Booking Limit:** Cegah monopoli jadwal (tengkulak lapangan) dengan pembatasan jam sewa harian per akun.
 
-Collision Detection (Anti-Bentrok): Validasi logika di backend yang secara tegas menolak pemesanan pada jam dan lapangan yang tumpang tindih dengan pesanan lain.
+### 💸 Ekosistem Finansial & Pembayaran
+7. **Dynamic Tiered Pricing:** Harga pintar yang otomatis menyesuaikan. Murah di *Off-Peak*, premium di *Prime Time*.
+8. **Automated Split Bill:** Ucapkan selamat tinggal pada "nanti gue transfer ya". Sistem membagi total biaya secara otomatis ke semua akun peserta yang di-*tag*.
+9. **Deposit Wallet:** Dompet digital internal untuk *checkout* secepat kilat tanpa repot verifikasi mutasi bank manual.
+10. **Clear Transaction History:** Pencatatan mutasi transparan untuk setiap sen uang masuk (*top-up*) dan keluar (*booking/split bill*).
+11. **Debt Tracking (Status Bayar):** Pantau siapa yang sudah "Lunas" dan siapa yang masih "Hutang" dalam satu pesanan patungan.
 
-Limit Booking Fair-Play: Pembatasan pemesanan maksimal (misal: 2 jam per hari untuk satu akun) guna mencegah monopoli jadwal oleh pihak tertentu.
+### 🤝 Interaksi & Pengalaman Pengguna
+12. **WhatsApp Smart Reminder:** Integrasi API yang otomatis menembakkan *chat* pengingat 2 jam sebelum jadwal main.
+13. **QR Code Check-in:** Datang, *scan*, main. Absensi digital instan untuk memvalidasi kehadiran pemain yang pembayarannya sudah lunas.
 
-Tiered Pricing (Harga Dinamis): Sistem yang otomatis membedakan tarif sewa berdasarkan jam, yaitu Off-Peak (lebih murah) dan Prime Time (lebih mahal).
+### 📈 Dasbor & Analitik Bisnis
+14. **Executive Revenue Dashboard:** Visualisasi grafik pendapatan (harian/mingguan/bulanan) agar *owner* bisa memantau kesehatan bisnis sambil rebahan.
+15. **User Retention Tracking:** Deteksi siapa "Sultan" dan "Aktivis" lapangan Anda untuk pemberian *reward* atau diskon loyalitas.
 
-Automated Split Bill: Fitur untuk membagi rata total biaya sewa kepada seluruh peserta yang di-tag dalam booking, menggantikan tagihan manual.
+### ✨ [BARU] Eksekusi Fase Lanjutan (The Next Level)
+16. **Rent-o-Gear (Manajemen Inventaris):** Lupa bawa kok? Raket putus? Fitur untuk menyewa raket, sepatu, atau beli *shuttlecock* yang langsung masuk ke tagihan *booking*.
+17. **Matchmaking & "Cari Lawan":** Solusi buat pemain solo. Buka *room* publik untuk mencari teman *mabar* (main bareng) atau melengkapi slot ganda yang kurang orang.
+18. **Tournament Generator:** Modul khusus untuk komunitas membuat turnamen mini, lengkap dengan *bracket* otomatis dan papan skor digital.
+19. **Court Rating & Review:** Fitur ulasan pasca-main. Pemain bisa memberi bintang pada kualitas lampu, kebersihan, atau kondisi karpet lapangan.
+20. **Player Gamification (Leaderboard):** Sistem *leveling* (*Bronze, Silver, Gold*) dan lencana (badges) berdasarkan seberapa sering pengguna bermain, memicu adiksi yang sehat!
 
-Deposit Wallet (Sistem Saldo): Dompet digital internal di mana anggota bisa top-up dana untuk mempercepat proses checkout tanpa perlu verifikasi bank setiap saat.
+---
 
-Transaction History: Pencatatan mutasi saldo (uang masuk dari top-up, uang keluar untuk booking atau bayar utang split bill).
+## 🚀 Roadmap Pengembangan (Agile Sprint)
 
-Tracking Status Bayar (Lunas/Hutang): Sistem pelacakan individu untuk setiap peserta di satu pesanan, memastikan tidak ada yang "kabur" dari patungan.
+Pengembangan tahap awal (MVP) diselesaikan dalam **27 Hari** dengan ritme kerja yang ketat, dilanjutkan dengan fase ekspansi.
 
-WhatsApp Reminder: Integrasi API (via Fonnte/Twilio) untuk mengirim pesan pengingat otomatis ke WhatsApp peserta 2 jam sebelum jadwal main.
+### 🏁 Fase 1: MVP & Core Systems (Hari 1 - 27)
 
-QR Code Check-in: Fitur absensi modern di mana sistem menghasilkan kode QR untuk di-scan di lokasi lapangan guna memvalidasi kehadiran pemain.
+* **Hari 1 - 3: Fondasi Identitas & Master Data**
+    * Setup *Environment* & Database.
+    * *(Fitur 1 & 2)*: Autentikasi Pengguna & CRUD Data Lapangan selesai.
+* **Hari 4 - 8: Mesin Pemesanan Utama**
+    * *(Fitur 3, 4 & 5)*: *Frontend* jadwal visual terkoneksi dengan *backend* *booking* dan algoritma *Collision Detection* aktif.
+* **Hari 9 - 13: Regulasi & Logika Finansial**
+    * *(Fitur 6, 7 & 8)*: Implementasi limitasi harian, integrasi harga dinamis (*Off-Peak/Prime*), dan logika *Automated Split Bill* rampung.
+* **Hari 14 - 17: Ekosistem Pembayaran**
+    * *(Fitur 9, 10 & 11)*: Dompet digital berfungsi. Uji coba *top-up*, mutasi riwayat, dan pelacakan status hutang/lunas sukses terintegrasi.
+* **Hari 18 - 22: Integrasi Eksternal & Kehadiran**
+    * *(Fitur 12 & 13)*: *Cron job* untuk WhatsApp Reminder berjalan lancar. Sistem *Generate* & *Scan QR Code* siap digunakan di lokasi.
+* **Hari 23 - 27: Analitik & Visualisasi Data**
+    * *(Fitur 14 & 15)*: *Rendering* grafik pendapatan *(Revenue Dashboard)* dan pelacakan retensi pengguna selesai untuk halaman Admin. Uji coba menyeluruh (UAT).
 
-Revenue Dashboard (Laporan Keuangan): Grafik analitik untuk admin yang merangkum total pendapatan harian, mingguan, hingga bulanan.
+### 🌌 Fase 2: Ekspansi Fitur Komunitas (Hari 28 - 40)
+* **Hari 28 - 32:** Implementasi *Rent-o-Gear* (Inventaris) dan modul *Court Rating*.
+* **Hari 33 - 36:** Pembuatan sistem *Matchmaking* ("Cari Lawan") berbasis *real-time chat* atau *lobby*.
+* **Hari 37 - 40:** Peluncuran *Tournament Generator* dan sistem *Leaderboard/Gamification*.
 
-User Retention Tracking: Analitik untuk melacak member paling aktif dan loyal, yang nantinya bisa digunakan admin untuk memberikan diskon atau reward khusus.
+---
 
-🚀 Roadmap Pengembangan (27 Hari)
+## 🛠️ Teknologi yang Digunakan (Tech Stack)
+*(Silakan ubah bagian ini sesuai dengan stack yang kamu gunakan, misalnya:)*
+* **Frontend:** React.js / Next.js, Tailwind CSS
+* **Backend:** Node.js (Express) / Python (Django/FastAPI)
+* **Database:** PostgreSQL / MongoDB
+* **Integrasi:** Fonnte/Twilio (WhatsApp API), Midtrans (Payment Gateway untuk Top-Up Saldo)
 
-Hari 1 - 3: Fondasi Identitas & Master Data
-Pada tahap ini, kerangka dasar aplikasi sudah bisa berdiri.
+---
 
-Fitur 1 (Manajemen Role Pengguna) Selesai: Sistem autentikasi, registrasi, dan batas akses antara Admin, Member, dan Guest sudah berfungsi penuh.
+## 🤝 Berkontribusi
+Kami menyambut baik kontribusi dari komunitas! Jika Anda menemukan *bug* atau memiliki ide brilian, silakan buka *Issue* atau kirimkan *Pull Request*. 
 
-Fitur 2 (Manajemen Data Lapangan) Selesai: Admin sudah bisa menambahkan, mengedit, atau menghapus data lapangan (termasuk jenis lapangan dan harga dasar) ke dalam database.
+1. *Fork* repositori ini
+2. Buat *branch* fitur Anda (`git checkout -b feature/FiturKeren`)
+3. *Commit* perubahan Anda (`git commit -m 'Menambahkan FiturKeren'`)
+4. *Push* ke *branch* (`git push origin feature/FiturKeren`)
+5. Buka *Pull Request*
 
-Hari 4 - 8: Mesin Pemesanan Utama (Core Engine)
-Fokus beralih ke layar utama bagi pengguna dan logika transaksinya.
+## 📄 Lisensi
+Didistribusikan di bawah Lisensi MIT. Lihat `LICENSE` untuk informasi lebih lanjut.
 
-Fitur 3 (Visual Schedule) Selesai: Antarmuka kalender interaktif sudah tampil di frontend, menarik data kosong/terisi dari database.
-
-Fitur 4 (Booking Instant) Selesai: Pengguna sudah bisa mengklik slot kosong dan melakukan proses pemesanan lapangan.
-
-Fitur 5 (Collision Detection) Selesai: Algoritma pencegah bentrok waktu sudah aktif di backend, secara otomatis menolak pemesanan di jam dan lapangan yang sama.
-
-Hari 9 - 13: Regulasi & Logika Finansial
-Sistem mulai diatur agar adil dan mengotomatisasi kalkulasi biaya yang rumit.
-
-Fitur 6 (Limit Booking) Selesai: Sistem sudah bisa memblokir pengguna yang mencoba memesan lebih dari batas maksimal jam harian.
-
-Fitur 7 (Tiered Pricing) Selesai: Harga yang muncul di halaman checkout sudah otomatis berubah tergantung apakah pengguna memesan di jam Off-Peak atau Prime Time.
-
-Fitur 8 (Automated Split Bill) Selesai: Sistem berhasil menghitung total biaya dan membaginya ke seluruh akun peserta yang ditambahkan dalam satu pemesanan.
-
-Hari 14 - 17: Ekosistem Pembayaran (Wallet)
-Proses perputaran uang internal diselesaikan di tahap ini.
-
-Fitur 9 (Deposit Wallet) Selesai: Pengguna memiliki saldo digital mandiri dan bisa melakukan simulasi top-up.
-
-Fitur 10 (Transaction History) Selesai: Setiap pergerakan uang (masuk/keluar) sudah tercatat rapi dalam tabel riwayat masing-masing pengguna.
-
-Fitur 11 (Tracking Status Bayar) Selesai: Label status (Lunas/Hutang) pada tagihan split bill sudah otomatis berubah menjadi "Lunas" saat saldo pengguna terpotong.
-
-Hari 18 - 22: Integrasi Eksternal & Kehadiran
-Aplikasi mulai dihubungkan dengan dunia nyata.
-
-Fitur 12 (WhatsApp Reminder) Selesai: Cron job (penjadwalan otomatis) sudah berjalan dan sukses mengirimkan pesan WhatsApp ke pemain 2 jam sebelum jadwal dimulai.
-
-Fitur 13 (QR Code Check-in) Selesai: Sistem berhasil men-generate QR Code unik untuk setiap pesanan lunas, dan Admin bisa melakukan scan untuk menandai kehadiran pemain di lokasi.
-
-Hari 23 - 27: Analitik & Visualisasi Data
-Tahap penyelesaian khusus untuk dasbor operasional pemilik/Admin.
-
-Fitur 14 (Revenue Dashboard) Selesai: Grafik pendapatan harian, mingguan, dan bulanan sudah ter-render sempurna di halaman Admin.
-
-Fitur 15 (User Retention Tracking) Selesai: Sistem sudah bisa menampilkan peringkat pengguna paling aktif beserta total kontribusi finansial mereka, siap digunakan untuk program loyalitas.
+---
+**MCKING-STAR** — *Let's Smash The Old Way of Managing Courts!* 🏸🔥
