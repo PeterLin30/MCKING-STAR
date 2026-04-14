@@ -1,0 +1,46 @@
+📚 Panduan Evaluasi Proyek PPLT: MCKING-STAR
+Mata Kuliah: Pengembangan Perangkat Lunak Tangkas (Agile)
+
+Disusun Oleh: MCKING STAR
+
+Selamat datang di repositori MCKING-STAR, sebuah Sistem Manajemen Stadion Badminton terintegrasi. Aplikasi ini dibangun dengan mengimplementasikan alur kerja Agile dan menggunakan Version Control (Git). Panduan ini dibuat untuk memudahkan proses evaluasi dan pengujian aplikasi secara lokal.
+
+🛠️ Prasyarat Sistem
+Sebelum menjalankan aplikasi, pastikan sistem telah terinstal perangkat lunak berikut:
+
+Node.js (Minimal versi 16.x)
+
+Git
+
+MongoDB Compass (Jika menggunakan database lokal) atau koneksi internet stabil (jika menggunakan MongoDB Atlas).
+
+🚀 Langkah Instalasi & Eksekusi
+1. Unduh Repositori
+Buka terminal/Command Prompt dan jalankan perintah berikut untuk mengunduh source code:
+
+- git clone https://github.com/PeterLin30/MCKING-STAR.git
+
+- cd MCKING-STAR
+
+2. Konfigurasi & Jalankan Backend (Server)
+Buka terminal baru untuk mengatur backend Node.js:
+
+- cd backend
+
+- npm install
+
+- node server.js
+
+- npm start
+(Pastikan terminal menunjukkan keterangan bahwa server berjalan di port 5000 dan berhasil terkoneksi ke MongoDB).
+
+3. Konfigurasi & Jalankan Frontend (UI/Aplikasi)
+Buka terminal baru (biarkan terminal backend tetap berjalan) untuk mengatur antarmuka React/Vite:
+
+- cd frontend
+
+- npm install
+
+- npm run dev
+(Buka tautan localhost yang muncul di terminal melalui browser pilihan Anda, biasanya di http://localhost:5173).
+

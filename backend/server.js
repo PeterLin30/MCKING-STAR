@@ -15,7 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 // Koneksi Database MongoDB
-mongoose.connect('mongodb://127.0.0.1:27017/mcking-star')
+mongoose.connect('mongodb://127.0.0.1:27017/mcking-star-db')
   .then(async () => {
     console.log('✅ Terhubung ke database MongoDB');
     const count = await Court.countDocuments();
