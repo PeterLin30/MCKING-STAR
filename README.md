@@ -1,8 +1,8 @@
 # 🏸 MCKING-STAR: Sistem Manajemen Badminton Modern
 
-**MCKING-STAR** adalah aplikasi manajemen operasional GOR Badminton berbasis web yang dirancang untuk mendigitalisasi proses pemesanan lapangan, manajemen komunitas (Mabar), hingga otomatisasi keuangan (Split Bill). 
+**MCKING-STAR** adalah aplikasi berbasis web komprehensif yang dirancang untuk mendigitalisasi operasional lapangan badminton. Aplikasi ini mengintegrasikan sistem pemesanan real-time, manajemen finansial sosial (Split Bill & Hutang), serta validasi kehadiran menggunakan teknologi QR Code. 
 
-Aplikasi ini dibangun menggunakan arsitektur **Jamstack** untuk memastikan performa yang cepat, aman, dan skala yang mudah dikembangkan.
+Dibangun dengan arsitektur modern Jamstack, aplikasi ini memisahkan sisi frontend yang cepat dan responsif dengan sisi backend berbasis Cloud untuk memastikan ketersediaan data secara real-time.
 
 ---
 
@@ -28,42 +28,47 @@ Aplikasi telah di-deploy dan dapat diakses secara real-time melalui tautan berik
 ## 🌟 Fitur Utama yang Terimplementasi
 
 ### 1. Autentikasi & Akun Cerdas
-* **Auto-Register:** Pendaftaran otomatis bagi pengguna baru saat login pertama kali.
-* **Welcome Bonus:** Saldo awal sebesar **Rp 100.000** bagi setiap pengguna baru.
-* **XP & Leveling:** Sistem gamifikasi di mana pengguna mendapatkan poin pengalaman setiap kali bermain untuk menaikkan level profil.
+* **Auto-Register & Bonus:** Pengguna baru cukup memasukkan nama dan password untuk terdaftar secara otomatis, serta mendapatkan Bonus Saldo Awal Rp 100.000.
+* **Role Management:** Pembagian hak akses otomatis antara Admin (Ruang Komando) dan User (Booking & Tiket).
+* **XP & Leveling System:** Pengguna mendapatkan Experience Points (XP) setiap kali bermain untuk meningkatkan level profil mereka.
 
 ### 2. Intelligent Booking System
-* **Interactive Time Slots:** Jadwal tersedia mulai jam 08:00 - 22:00 yang otomatis terkunci jika sudah dipesan.
-* **Dynamic Pricing:** Penambahan biaya otomatis (*Night Surcharge*) sebesar Rp 20.000 untuk sesi malam (di atas jam 18:00).
-* **Collision Prevention:** Proteksi database agar tidak terjadi bentrok jadwal di lapangan yang sama.
+* **Visual Interactive Schedule:** Pemilihan slot waktu (08:00 - 22:00) yang terkunci secara otomatis jika sudah dipesan.
+* **Night Surcharge:** Otomatisasi penambahan biaya Rp 20.000 untuk pemesanan di atas jam 18:00.
+* **Inventory Integration:** Penyewaan raket dan kok langsung dalam satu paket pemesanan.
+* **Collision Detection:** Validasi database yang mencegah satu slot waktu dipesan oleh dua orang berbeda.
 
 ### 3. Sosial & Finansial (Sistem Hutang)
-* **Automated Split Bill:** Membagi biaya sewa secara merata kepada teman yang diajak.
-* **Debt Blocker:** Fitur keamanan yang **memblokir akses booking/mabar/turnamen** jika pengguna masih memiliki hutang yang belum dilunasi.
-* **Buku Hutang Digital:** Manajemen piutang dan hutang pribadi dengan fitur pelunasan instan menggunakan saldo dompet.
-* **Promo Code:** Top-up menggunakan kode voucher `MCKINGPRO` untuk mendapatkan bonus saldo Rp 50.000.
+* **Automated Split Bill:** Membagi total biaya sewa kepada teman yang diajak secara otomatis.
+* **Debt Blocker:** Sistem secara cerdas memblokir fitur Booking, Mabar, dan Turnamen bagi pengguna yang masih memiliki hutang belum lunas.
+* **Wallet & Top-up:** Sistem saldo digital dengan fitur Voucher Promo MCKINGPRO untuk mendapatkan bonus saldo Rp 50.000.
+* **Buku Hutang:** Pencatatan piutang (uang di luar) dan hutang pribadi dengan fitur pelunasan sekali klik.
 
-### 4. Validasi Kehadiran & QR Code
-* **Dynamic QR Ticket:** Generate QR Code unik untuk setiap transaksi sebagai tiket masuk.
-* **Time Window Validation:** Tiket hanya bisa diverifikasi oleh Admin dalam rentang waktu **1 jam sebelum** hingga **1 jam sesudah** jadwal main dimulai.
-* **Real-time Check-in:** Notifikasi sukses verifikasi muncul secara instan di layar HP pengguna saat admin melakukan scan.
+### 4. Lobi Mabar & Turnamen
+* **Public Matchmaking**: Fitur untuk membuka jadwal pribadi menjadi lobi umum agar pemain lain bisa bergabung dan berbagi biaya.
+* **Tournament Board**: Manajemen kompetisi lokal lengkap dengan bagan perempat final dan sistem pendaftaran otomatis.
 
-### 5. Ruang Komando Admin
-* **Revenue Dashboard:** Visualisasi grafik pendapatan yang mencakup Omzet dan estimasi Laba Bersih.
-* **Flexible Period Filter:** Laporan keuangan dapat difilter berdasarkan 7 hari, 1 bulan, 3 bulan, hingga **6 bulan terakhir**.
-* **Mobile Web Scanner:** Fitur scanner QR Code yang dioptimalkan khusus untuk kamera handphone admin.
-* **Hall of Fame:** Menampilkan 5 pelanggan dengan kontribusi tertinggi sebagai bentuk apresiasi loyalitas.
+### 5. Validasi Kehadiran (QR Code Real-time)
+* **Dynamic QR Ticket:** Setiap pesanan menghasilkan QR Code unik yang berfungsi sebagai tiket masuk.
+* **Time Window Validation:** Tiket hanya bisa di-scan oleh Admin 1 jam sebelum hingga 1 jam sesudah jadwal main dimulai.
+* **Real-time Check-in:** Begitu Admin melakukan verifikasi (via kamera HP atau manual), layar User akan otomatis memunculkan pesan "Selamat Bermain" secara instan.
+
+### 6. Admin Ruang Komando
+* **Revenue Analytics:** Grafik pendapatan dinamis yang mencakup data Omzet dan Laba Bersih.
+* **Dynamic Period Filter:** Analisis pendapatan berdasarkan filter 7 Hari, 1 Bulan, 3 Bulan, hingga 6 Bulan Terakhir.
+* **Mobile Camera Scanner:** Admin dapat menggunakan kamera HP langsung dari browser untuk melakukan scanning tiket pemain di lokasi GOR.
+* **Hall of Fame:** Melacak 5 pelanggan paling loyal berdasarkan total kontribusi finansial.
 
 ---
 
-## 📂 Struktur Database (SQL)
-Arsitektur data menggunakan PostgreSQL dengan skema relasional:
-* `users`: Data kredensial, saldo, dan XP.
-* `courts`: Data master lapangan dan harga dasar.
-* `bookings`: Transaksi sesi main, status check-in, dan log Mabar.
-* `debts`: Pencatatan tagihan patungan antar pengguna.
-* `tournaments`: Pengelolaan kompetisi lokal.
-* `reviews`: Akumulasi rating bintang dan ulasan komentar pemain.
+## 📂 Struktur Database (Supabase)
+Seluruh logika data dikelola menggunakan PostgreSQL di Supabase dengan tabel utama:
+* `users`: Mengelola saldo, XP, dan kredensial.
+* `courts`: Menyimpan data lapangan dan harga.
+* `bookings`: Master data transaksi, jadwal, dan status kehadiran.
+* `debts`: Melacak hutang antar pengguna akibat split bill.
+* `tournaments`: Data kompetisi dan peserta.
+* `reviews`: Menyimpan rating bintang dan ulasan lapangan.
 
 ---
 
