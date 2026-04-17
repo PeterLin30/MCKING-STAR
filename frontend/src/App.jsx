@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { QRCodeSVG as QRCode } from 'qrcode.react'; 
 import Swal from 'sweetalert2';
-import { supabase } from './supabase'; // Pastikan file supabase.js sudah dibuat
+import { supabase } from './supabase'; 
 
 const getLocalTodayDateString = () => {
   const now = new Date();
@@ -12,7 +12,7 @@ const getLocalTodayDateString = () => {
 function App() {
   const [courts, setCourts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isServerActive, setIsServerActive] = useState(true); // Supabase Cloud selalu aktif
+  const [isServerActive, setIsServerActive] = useState(true); 
   
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedCourt, setSelectedCourt] = useState(null);
@@ -65,7 +65,7 @@ function App() {
   const [chartFilter, setChartFilter] = useState("harian"); 
   const [showTopUpModal, setShowTopUpModal] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState("");
-  const [promoCode, setPromoCode] = useState(""); // FITUR BARU: Kode Promo
+  const [promoCode, setPromoCode] = useState(""); 
 
   const operationalHours = Array.from({ length: 15 }, (_, i) => `${(i + 8).toString().padStart(2, '0')}:00`);
 
@@ -123,6 +123,36 @@ function App() {
   };
 
   // ==========================================
+  // 1B. REALTIME LISTENER (FITUR BARU SCAN BARCODE)
+  // ==========================================
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'bookings' },
+        (payload) => {
+          if (payload.new.player_name === currentUser.name && payload.new.status === 'checked-in') {
+            const court = courts.find(c => c.id === payload.new.court_id);
+            Swal.fire({
+              title: 'Selamat Bermain! 🏸',
+              text: `Tiket terverifikasi. Silakan masuk ke ${court?.name || 'Lapangan'} untuk jam ${payload.new.start_time.substring(0,5)}`,
+              icon: 'success',
+              timer: 5000
+            });
+            // Update daftar tiket agar QR Code berubah jadi tanda ✅
+            loadMyTickets(); 
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [currentUser, courts]);
+
+  // ==========================================
   // 2. AUTH & USER ACTIONS
   // ==========================================
 
@@ -146,7 +176,6 @@ function App() {
     if (!amount || amount <= 0) return Swal.fire("Oops!", "Nominal tidak valid!", "warning");
 
     let bonus = 0;
-    // FITUR BARU: Eksekusi Kode Promo
     if (promoCode.toUpperCase() === "MCKINGPRO") {
       bonus = 50000;
       Swal.fire("Voucher Berhasil! 🎉", "Kamu mendapat bonus saldo Rp 50.000!", "success");
@@ -186,7 +215,6 @@ function App() {
       const rawFriends = bookingFriends.split(',').map(n => n.trim()).filter(n => n !== "" && n.toLowerCase() !== currentUser.name.toLowerCase());
       friendsArray = [...new Set(rawFriends)]; 
       
-      // Verifikasi nama teman dari database (Anti-Cheat)
       if (friendsArray.length > 0) {
         const { data: validUsers } = await supabase.from('users').select('name').in('name', friendsArray);
         if (!validUsers || validUsers.length !== friendsArray.length) {
@@ -225,6 +253,7 @@ function App() {
       max_players: maxPlayers,
       split_members: splitMembers,
       join_price: customJoinPrice,
+      status: 'booked', // Default status
       additional_items: { racket: racketCount, kok: kokCount }
     }]);
 
@@ -356,14 +385,14 @@ function App() {
   // ==========================================
 
   const loadAdminData = async () => {
-    const { data: txs } = await supabase.from('bookings').select('*');
+    const { data: txs } = await supabase.from('bookings').select('*').order('booking_date', { ascending: false });
     const { data: users } = await supabase.from('users').select('*').order('balance', { ascending: false }).limit(5);
 
     const totalRev = txs.reduce((acc, curr) => acc + curr.price, 0);
     setRevenueData({
       totalRevenue: totalRev,
       totalTransactions: txs.length,
-      recentTransactions: txs.slice(-10).reverse()
+      recentTransactions: txs.slice(0, 10) // Tampilkan 10 transaksi terakhir
     });
     setLoyalCustomers(users.map(u => ({ name: u.name, totalContribution: u.balance })));
     setShowAdminDashboard(true);
@@ -385,6 +414,19 @@ function App() {
       await supabase.from('courts').delete().eq('id', id);
       Swal.fire("Terhapus!", "", "success");
       fetchCourts();
+    }
+  };
+
+  // FUNGSI VERIFIKASI ADMIN (FITUR BARU)
+  const handleCheckIn = async (bookingId) => {
+    const { error } = await supabase
+      .from('bookings')
+      .update({ status: 'checked-in' })
+      .eq('id', bookingId);
+
+    if (!error) {
+      Swal.fire("Berhasil!", "Pemain telah diverifikasi masuk.", "success");
+      loadAdminData(); // Refresh data admin
     }
   };
 
@@ -705,7 +747,6 @@ function App() {
                  <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Nominal (Rp)</label>
                  <input type="number" value={topUpAmount} onChange={(e) => setTopUpAmount(e.target.value)} placeholder="Misal: 50000" className="w-full bg-slate-50 border-none p-4 rounded-2xl font-bold text-slate-700 outline-none focus:ring-4 focus:ring-emerald-200 transition-all placeholder-slate-300" required autoFocus/>
               </div>
-              {/* INPUT KODE PROMO (TAMBAHAN BARU) */}
               <div>
                  <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Kode Promo / Voucher</label>
                  <input type="text" value={promoCode} onChange={(e) => setPromoCode(e.target.value)} placeholder="Opsional" className="w-full bg-emerald-50/50 border border-emerald-100 p-4 rounded-2xl font-bold text-emerald-700 outline-none focus:ring-4 focus:ring-emerald-200 transition-all placeholder-emerald-300 uppercase"/>
@@ -891,9 +932,6 @@ function App() {
               <div>
                  <input type="password" value={inputPassword} onChange={(e) => setInputPassword(e.target.value)} placeholder="Kata Sandi Rahasia" className="w-full bg-slate-50 border-none p-4 rounded-2xl font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-200 transition-all placeholder-slate-300" required/>
               </div>
-              <div>
-                 <input type="text" value={inputPhone} onChange={(e) => setInputPhone(e.target.value)} placeholder="No. WA (628...)" className="w-full bg-slate-50 border-none p-4 rounded-2xl font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-200 transition-all placeholder-slate-300" />
-              </div>
               <div className="pt-4 space-y-3">
                  <button type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl cursor-pointer shadow-lg hover:shadow-blue-500/40 hover:-translate-y-1 transition-all text-lg">Masuk Arena</button>
                  <button type="button" onClick={() => setShowLoginForm(false)} className="w-full bg-transparent text-slate-400 hover:text-slate-600 font-bold py-3 rounded-2xl cursor-pointer transition-colors">Nanti Saja</button>
@@ -933,8 +971,16 @@ function App() {
                             <span className="bg-amber-100 text-amber-800 text-[10px] px-3 py-1 rounded-lg font-black uppercase shadow-sm border border-amber-200">{currentUser.level || "Bronze"}</span>
                          </div>
 
-                         <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 mb-5 mt-6 shadow-inner transition-transform group-hover:scale-105">
-                           {ticket.id && <QRCode value={String(ticket.id)} size={120} fgColor="#0f172a" />}
+                         {/* PERUBAHAN STATUS SCAN QR CODE */}
+                         <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 mb-5 mt-6 shadow-inner transition-transform group-hover:scale-105 flex justify-center items-center h-36 w-36 mx-auto">
+                            {ticket.status === 'checked-in' ? (
+                               <div className="text-center">
+                                  <div className="text-4xl mb-2">✅</div>
+                                  <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">Terverifikasi</p>
+                               </div>
+                            ) : (
+                               ticket.id && <QRCode value={String(ticket.id)} size={110} fgColor="#0f172a" />
+                            )}
                          </div>
                          
                          <div className="w-full border-t-2 border-dashed border-slate-200 my-2"></div>
@@ -1121,7 +1167,7 @@ function App() {
                       icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Ya, Bersihkan!'
                     });
                     if(confirmResult.isConfirmed) { 
-                      await supabase.from('bookings').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Hack untuk hapus semua
+                      await supabase.from('bookings').delete().neq('id', '00000000-0000-0000-0000-000000000000'); 
                       Swal.fire("Dibersihkan!", "Riwayat transaksi telah dikosongkan.", "success");
                       setRevenueData({ totalRevenue: 0, totalTransactions: 0, recentTransactions: [] }); 
                     } 
@@ -1137,7 +1183,7 @@ function App() {
                         <th className="p-5 text-xs font-black text-slate-400 uppercase tracking-widest">Pemesan & Detail</th>
                         <th className="p-5 text-xs font-black text-slate-400 uppercase tracking-widest">Alat Disewa</th>
                         <th className="p-5 text-xs font-black text-slate-400 uppercase tracking-widest">Jadwal Main</th>
-                        <th className="p-5 text-xs font-black text-slate-400 uppercase tracking-widest text-right">Nominal Uang</th>
+                        <th className="p-5 text-xs font-black text-slate-400 uppercase tracking-widest text-right">Aksi & Status</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -1149,6 +1195,10 @@ function App() {
                                 <span className="font-black text-slate-800 text-sm">{tx.player_name}</span>
                                 {tx.is_public && <span className="bg-indigo-100 text-indigo-700 text-[8px] px-2 py-0.5 rounded-md font-black uppercase tracking-widest border border-indigo-200">Mabar</span>}
                               </div>
+                              <div className="text-[10px] text-slate-500 font-bold leading-tight space-y-1">
+                                 {tx.split_members && tx.split_members.length > 1 && <div><span className="text-slate-400">Patungan:</span> {tx.split_members.filter(m => m !== tx.player_name).join(', ')}</div>}
+                                 {tx.joined_players && tx.joined_players.length > 0 && <div className="text-indigo-500"><span className="text-indigo-300">Joiner:</span> {tx.joined_players.join(', ')}</div>}
+                              </div>
                             </td>
                             <td className="p-5 text-xs font-bold text-amber-600">
                                {tx.additional_items ? <span className="bg-amber-50 border border-amber-100 px-2 py-1 rounded-lg">Raket: {tx.additional_items.racket || 0}, Kok: {tx.additional_items.kok || 0}</span> : <span className="text-slate-300">-</span>}
@@ -1157,8 +1207,19 @@ function App() {
                                <p className="text-xs font-bold text-slate-500">{tx.booking_date}</p>
                                <span className="font-black text-blue-600 bg-blue-50 px-2 py-1 rounded-md text-sm mt-1 inline-block border border-blue-100">{tx.start_time?.substring(0,5)}</span>
                             </td>
-                            <td className="p-5 text-right">
-                               <span className="font-black text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg text-sm border border-emerald-100 whitespace-nowrap">Rp {(tx.price || 0).toLocaleString('id-ID')}</span>
+                            
+                            {/* TOMBOL VERIFIKASI ADMIN */}
+                            <td className="p-5 text-right w-40">
+                               {tx.status !== 'checked-in' ? (
+                                 <button onClick={() => handleCheckIn(tx.id)} className="bg-blue-600 text-white w-full py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 transition-colors mb-2 shadow-sm cursor-pointer">
+                                   Verifikasi
+                                 </button>
+                               ) : (
+                                 <span className="bg-green-100 text-green-700 w-full py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest block mb-2 border border-green-200 text-center">
+                                   Masuk ✅
+                                 </span>
+                               )}
+                               <span className="font-black text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg text-sm border border-emerald-100 whitespace-nowrap block text-center">Rp {(tx.price || 0).toLocaleString('id-ID')}</span>
                             </td>
                           </tr>
                         ))
