@@ -2,11 +2,37 @@ import React, { useState, useEffect } from 'react';
 import { QRCodeSVG as QRCode } from 'qrcode.react'; 
 import Swal from 'sweetalert2';
 import { supabase } from './supabase'; 
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 const getLocalTodayDateString = () => {
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   return now.toISOString().split('T')[0];
+};
+
+const QrReader = ({ onScanSuccess }) => {
+  useEffect(() => {
+    const scanner = new Html5QrcodeScanner("reader", {
+      fps: 10,
+      qrbox: { width: 250, height: 250 },
+      supportedScanTypes: [0] // 0 = QR_CODE
+    }, false);
+    
+    scanner.render(
+      (decodedText) => {
+        scanner.clear(); // Matikan kamera setelah berhasil scan
+        onScanSuccess(decodedText);
+      },
+      (error) => { /* Abaikan error berulang saat mencari QR */ }
+    );
+
+    // Bersihkan kamera jika admin menutup menu
+    return () => {
+      scanner.clear().catch(e => console.error("Gagal menutup kamera", e));
+    };
+  }, [onScanSuccess]);
+
+  return <div id="reader" className="w-full bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200"></div>;
 };
 
 function App() {
@@ -67,6 +93,31 @@ function App() {
   const [topUpAmount, setTopUpAmount] = useState("");
   const [promoCode, setPromoCode] = useState(""); 
   const [scanInput, setScanInput] = useState("");
+
+  const [showCamera, setShowCamera] = useState(false);
+
+  const handleCameraScan = async (decodedText) => {
+    setShowCamera(false); // Tutup kamera
+    
+    // Cek database menggunakan teks hasil scan
+    const { data: ticket, error } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('id', decodedText.trim())
+      .single();
+
+    if (error || !ticket) {
+      return Swal.fire("Tiket Tidak Valid!", "QR Code tidak dikenali oleh sistem.", "error");
+    }
+
+    if (ticket.status === 'checked-in') {
+      return Swal.fire("Sudah Digunakan!", "Tiket ini sudah pernah di-scan sebelumnya.", "warning");
+    }
+
+    // Jika valid, jalankan fungsi check-in
+    await handleCheckIn(ticket.id);
+  };
+
   const operationalHours = Array.from({ length: 15 }, (_, i) => `${(i + 8).toString().padStart(2, '0')}:00`);
 
   // ==========================================
@@ -1209,21 +1260,23 @@ function App() {
                       <span className="p-3 bg-slate-100 text-slate-600 rounded-xl text-xl">📜</span>
                       <h3 className="font-black text-2xl text-slate-800 tracking-tight">Riwayat Transaksi</h3>
                       {/* KOTAK SCANNER QR CODE */}
-<div className="mt-6 bg-slate-50 p-6 rounded-2xl border border-slate-200">
-  <h4 className="text-sm font-black uppercase tracking-widest text-slate-500 mb-4">📷 Scan QR Code Tiket</h4>
-  <form onSubmit={handleScanSubmit} className="flex gap-3">
-    <input 
-      type="text" 
-      value={scanInput} 
-      onChange={(e) => setScanInput(e.target.value)} 
-      placeholder="Arahkan Scanner ke QR Code atau Paste ID Tiket di sini..." 
-      className="flex-1 bg-white border border-slate-200 p-4 rounded-xl font-mono text-sm focus:ring-4 focus:ring-blue-200 outline-none"
-      autoFocus
-    />
-    <button type="submit" className="bg-slate-800 text-white px-8 rounded-xl font-black hover:bg-slate-700 transition-colors">
-      Proses Scan
-    </button>
-  </form>
+<div className="mb-6 bg-slate-50 p-6 rounded-3xl border border-slate-200 shadow-inner">
+  <div className="flex justify-between items-center mb-4">
+     <div>
+        <h4 className="text-sm font-black uppercase tracking-widest text-slate-600">📷 Scan QR Code Tiket</h4>
+        <p className="text-xs font-bold text-slate-400">Arahkan kamera HP ke layar pemain.</p>
+     </div>
+     <button onClick={() => setShowCamera(!showCamera)} className={`px-6 py-3 rounded-xl font-black text-sm shadow-md transition-all ${showCamera ? 'bg-red-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-500'}`}>
+        {showCamera ? 'Tutup Kamera ✖' : 'Buka Kamera 📷'}
+     </button>
+  </div>
+
+  {/* Area Kamera akan muncul di sini jika tombol ditekan */}
+  {showCamera && (
+    <div className="mt-4 max-w-md mx-auto animate-in zoom-in-95">
+       <QrReader onScanSuccess={handleCameraScan} />
+    </div>
+  )}
 </div>
                    </div>
                   <button onClick={async () => { 
