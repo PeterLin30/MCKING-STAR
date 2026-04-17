@@ -66,7 +66,7 @@ function App() {
   const [showTopUpModal, setShowTopUpModal] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState("");
   const [promoCode, setPromoCode] = useState(""); 
-
+  const [scanInput, setScanInput] = useState("");
   const operationalHours = Array.from({ length: 15 }, (_, i) => `${(i + 8).toString().padStart(2, '0')}:00`);
 
   // ==========================================
@@ -449,6 +449,34 @@ function App() {
       Swal.fire("Berhasil!", "Pemain telah diverifikasi masuk.", "success");
       loadAdminData(); // Refresh data admin
     }
+  };
+
+  const handleScanSubmit = async (e) => {
+    e.preventDefault();
+    if (!scanInput.trim()) return;
+
+    // Cek apakah ID tiket ada di database
+    const { data: ticket, error } = await supabase
+      .from('bookings')
+      .select('*, courts(name)')
+      .eq('id', scanInput.trim())
+      .single();
+
+    if (error || !ticket) {
+      Swal.fire("Tiket Tidak Valid!", "QR Code tidak dikenali oleh sistem.", "error");
+      setScanInput("");
+      return;
+    }
+
+    if (ticket.status === 'checked-in') {
+      Swal.fire("Sudah Digunakan!", "Tiket ini sudah pernah di-scan sebelumnya.", "warning");
+      setScanInput("");
+      return;
+    }
+
+    // Jika valid, jalankan fungsi check-in
+    await handleCheckIn(ticket.id);
+    setScanInput(""); // Kosongkan input setelah berhasil
   };
 
   const calculateXPWidth = () => {
@@ -1180,6 +1208,23 @@ function App() {
                    <div className="flex items-center gap-3">
                       <span className="p-3 bg-slate-100 text-slate-600 rounded-xl text-xl">📜</span>
                       <h3 className="font-black text-2xl text-slate-800 tracking-tight">Riwayat Transaksi</h3>
+                      {/* KOTAK SCANNER QR CODE */}
+<div className="mt-6 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+  <h4 className="text-sm font-black uppercase tracking-widest text-slate-500 mb-4">📷 Scan QR Code Tiket</h4>
+  <form onSubmit={handleScanSubmit} className="flex gap-3">
+    <input 
+      type="text" 
+      value={scanInput} 
+      onChange={(e) => setScanInput(e.target.value)} 
+      placeholder="Arahkan Scanner ke QR Code atau Paste ID Tiket di sini..." 
+      className="flex-1 bg-white border border-slate-200 p-4 rounded-xl font-mono text-sm focus:ring-4 focus:ring-blue-200 outline-none"
+      autoFocus
+    />
+    <button type="submit" className="bg-slate-800 text-white px-8 rounded-xl font-black hover:bg-slate-700 transition-colors">
+      Proses Scan
+    </button>
+  </form>
+</div>
                    </div>
                   <button onClick={async () => { 
                     const confirmResult = await Swal.fire({
