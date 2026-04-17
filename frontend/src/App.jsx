@@ -181,49 +181,45 @@ function App() {
   }, [currentUser, courts]);
 
   // ==========================================
-  // 2. AUTH & USER ACTIONS (DENGAN AUTO-REGISTER & BONUS 100RB)
+  // FUNGSI CEK HUTANG (FITUR BARU)
+  // ==========================================
+  const checkHasUnpaidDebt = async () => {
+    if (!currentUser) return false;
+    const { data } = await supabase
+      .from('debts')
+      .select('id')
+      .eq('debtor_name', currentUser.name)
+      .eq('is_paid', false)
+      .limit(1);
+    return data && data.length > 0;
+  };
+
+  // ==========================================
+  // 2. AUTH & USER ACTIONS
   // ==========================================
 
   const submitLogin = async (e) => {
     e.preventDefault(); 
     if (!inputName.trim() || !inputPassword.trim()) return Swal.fire("Oops!", "Lengkapi data!", "warning");
 
-    // Cari apakah user sudah terdaftar
-    const { data: users, error: searchError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('name', inputName);
-
+    const { data: users, error: searchError } = await supabase.from('users').select('*').eq('name', inputName);
     const existingUser = users && users.length > 0 ? users[0] : null;
 
     if (existingUser) {
-      // User sudah ada, lakukan pencocokan password
-      if (existingUser.password !== inputPassword) {
-        return Swal.fire("Gagal Login!", "Password salah.", "error");
-      }
+      if (existingUser.password !== inputPassword) return Swal.fire("Gagal Login!", "Password salah.", "error");
       Swal.fire("Berhasil Masuk!", `Selamat datang kembali, ${existingUser.name} 👋`, "success");
       setCurrentUser(existingUser);
     } else {
-      // User belum ada, lakukan AUTO-REGISTER
       const { data: newUser, error: insertError } = await supabase
         .from('users')
-        .insert([{ 
-          name: inputName, 
-          password: inputPassword, 
-          role: 'user', 
-          balance: 100000, // <--- BONUS AWAL RP 100.000
-          xp: 0, 
-          level: 'Bronze 🥉' 
-        }])
+        .insert([{ name: inputName, password: inputPassword, role: 'user', balance: 100000, xp: 0, level: 'Bronze 🥉' }])
         .select()
         .single();
 
       if (insertError) return Swal.fire("Gagal Daftar!", insertError.message, "error");
-
       Swal.fire("Akun Baru Dibuat! 🎉", `Selamat! Kamu dapat bonus saldo awal Rp 100.000. Selamat datang di MCKING-STAR, ${newUser.name}!`, "success");
       setCurrentUser(newUser);
     }
-
     setShowLoginForm(false); 
     setInputName(""); setInputPassword("");
   };
@@ -234,7 +230,6 @@ function App() {
     if (!amount || amount <= 0) return Swal.fire("Oops!", "Nominal tidak valid!", "warning");
 
     let bonus = 0;
-    // FITUR: Eksekusi Kode Promo
     if (promoCode.toUpperCase() === "MCKINGPRO") {
       bonus = 50000;
       Swal.fire("Voucher Berhasil! 🎉", "Kamu mendapat bonus saldo Rp 50.000!", "success");
@@ -269,12 +264,16 @@ function App() {
   };
 
   const submitBooking = async () => {
+    // 1. CEK HUTANG SEBELUM PROSES
+    if (await checkHasUnpaidDebt()) {
+      return Swal.fire("Akses Ditolak! 🛑", "Kamu masih memiliki hutang yang belum dibayar. Silakan lunasi terlebih dahulu di menu Hutang.", "error");
+    }
+
     let friendsArray = [];
     if (bookingFriends.trim() !== "") {
       const rawFriends = bookingFriends.split(',').map(n => n.trim()).filter(n => n !== "" && n.toLowerCase() !== currentUser.name.toLowerCase());
       friendsArray = [...new Set(rawFriends)]; 
       
-      // Verifikasi nama teman dari database (Anti-Cheat)
       if (friendsArray.length > 0) {
         const { data: validUsers } = await supabase.from('users').select('name').in('name', friendsArray);
         if (!validUsers || validUsers.length !== friendsArray.length) {
@@ -342,6 +341,12 @@ function App() {
 
   const joinMatch = async (matchId, patungan, ownerName) => {
     if (!currentUser) return setShowLoginForm(true);
+    
+    // 1. CEK HUTANG SEBELUM PROSES
+    if (await checkHasUnpaidDebt()) {
+      return Swal.fire("Akses Ditolak! 🛑", "Kamu masih memiliki hutang. Lunasi dahulu sebelum bergabung ke lobi mabar.", "error");
+    }
+
     if (currentUser.balance < patungan) return Swal.fire("Saldo Kurang!", "", "error");
 
     const confirmResult = await Swal.fire({
@@ -430,18 +435,26 @@ function App() {
       loadTournaments();
     } else {
       Swal.fire("Gagal Dibuat!", `Error: ${error.message}. Pastikan tabel tournaments memiliki kolom 'date' dan 'fee'`, "error");
-      console.error(error);
     }
   };
 
   const handleJoinTournament = async (tId, fee) => {
     if (!currentUser) return setShowLoginForm(true);
+    
+    // 1. CEK HUTANG SEBELUM PROSES
+    if (await checkHasUnpaidDebt()) {
+      return Swal.fire("Akses Ditolak! 🛑", "Kamu masih memiliki hutang. Lunasi dahulu sebelum ikut turnamen.", "error");
+    }
+
     if (currentUser.balance < fee) return Swal.fire("Saldo Kurang!", "", "error");
+    
     const { data: t } = await supabase.from('tournaments').select('*').eq('id', tId).single();
     const newParticipants = [...(t.participants || []), currentUser.name];
+    
     await supabase.from('tournaments').update({ participants: newParticipants }).eq('id', tId);
     const newBalance = currentUser.balance - fee;
     await supabase.from('users').update({ balance: newBalance }).eq('id', currentUser.id);
+    
     setCurrentUser({ ...currentUser, balance: newBalance });
     loadTournaments();
     Swal.fire("Berhasil Daftar!", "Siapkan raketmu!", "success");
@@ -454,7 +467,7 @@ function App() {
   };
 
   // ==========================================
-  // 5. ADMIN ANALYTICS & COURT MANAGEMENT
+  // 5. ADMIN ANALYTICS, COURT & SCANNER
   // ==========================================
 
   const loadAdminData = async () => {
@@ -467,7 +480,7 @@ function App() {
       totalRevenue: totalRev,
       totalTransactions: txs.length,
       allTransactions: txs, 
-      recentTransactions: txs.slice(0, 10) // Hanya tampilkan 10 di tabel
+      recentTransactions: txs.slice(0, 10) 
     });
     setLoyalCustomers(users.map(u => ({ name: u.name, totalContribution: u.balance })));
     setShowAdminDashboard(true);
@@ -492,15 +505,34 @@ function App() {
     }
   };
 
-  const handleCheckIn = async (bookingId) => {
-    const { error } = await supabase
-      .from('bookings')
-      .update({ status: 'checked-in' })
-      .eq('id', bookingId);
+  // FUNGSI VERIFIKASI ADMIN (DENGAN BATAS WAKTU 1 JAM)
+  const verifyTicket = async (ticket) => {
+    if (ticket.status === 'checked-in') {
+      return Swal.fire("Sudah Digunakan!", "Tiket ini sudah pernah di-scan sebelumnya.", "warning");
+    }
+
+    const now = new Date();
+    const timeString = ticket.start_time.length === 5 ? `${ticket.start_time}:00` : ticket.start_time;
+    const startDateTime = new Date(`${ticket.booking_date}T${timeString}`);
+    
+    const minScanTime = new Date(startDateTime.getTime() - 60 * 60 * 1000);
+    const maxScanTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
+
+    if (now < minScanTime) {
+      return Swal.fire("Belum Waktunya! ⏳", `Tiket baru bisa di-scan mulai pukul ${minScanTime.toTimeString().substring(0,5)} WIB.`, "warning");
+    }
+
+    if (now > maxScanTime) {
+      return Swal.fire("Tiket Hangus! 🥀", "Waktu bermain untuk sesi ini sudah berakhir.", "error");
+    }
+
+    const { error } = await supabase.from('bookings').update({ status: 'checked-in' }).eq('id', ticket.id);
 
     if (!error) {
       Swal.fire("Berhasil!", "Pemain telah diverifikasi masuk.", "success");
       loadAdminData(); 
+    } else {
+      Swal.fire("Gagal!", "Terjadi kesalahan pada server.", "error");
     }
   };
 
@@ -509,9 +541,7 @@ function App() {
     const { data: ticket, error } = await supabase.from('bookings').select('*').eq('id', decodedText.trim()).single();
 
     if (error || !ticket) return Swal.fire("Tiket Tidak Valid!", "QR Code tidak dikenali oleh sistem.", "error");
-    if (ticket.status === 'checked-in') return Swal.fire("Sudah Digunakan!", "Tiket ini sudah pernah di-scan sebelumnya.", "warning");
-    
-    await handleCheckIn(ticket.id);
+    await verifyTicket(ticket);
   };
 
   const calculateXPWidth = () => {
@@ -519,7 +549,6 @@ function App() {
     return `${Math.min((xp % 100), 100)}%`; 
   };
 
-  // LOGIKA CHART DINAMIS (Memproses transaksi Supabase sesuai filter dropdown)
   const processChartData = () => {
     if (!revenueData || !revenueData.allTransactions || !revenueData.allTransactions.length) return [];
     
@@ -528,9 +557,8 @@ function App() {
     
     revenueData.allTransactions.forEach(tx => {
         if(!tx.booking_date) return;
-        const key = isDaily ? tx.booking_date : tx.booking_date.substring(0, 7); // yyyy-mm
+        const key = isDaily ? tx.booking_date : tx.booking_date.substring(0, 7); 
         const price = tx.price || 0;
-        
         if (!grouped[key]) grouped[key] = 0;
         grouped[key] += price;
     });
@@ -538,11 +566,10 @@ function App() {
     const sortedKeys = Object.keys(grouped).sort();
     let displayKeys = [];
     
-    // Filter berdasarkan Dropdown
     if (chartFilter === 'harian') displayKeys = sortedKeys.slice(-7);
     else if (chartFilter === '1_bulan') displayKeys = sortedKeys.slice(-30);
-    else if (chartFilter === '3_bulan') displayKeys = sortedKeys.slice(-3); // 3 Bulan terakhir
-    else if (chartFilter === '6_bulan') displayKeys = sortedKeys.slice(-6); // 6 Bulan terakhir
+    else if (chartFilter === '3_bulan') displayKeys = sortedKeys.slice(-3); 
+    else if (chartFilter === '6_bulan') displayKeys = sortedKeys.slice(-6); 
 
     const maxRev = Math.max(...displayKeys.map(k => grouped[k]), 1);
 
@@ -560,7 +587,7 @@ function App() {
         return {
             label,
             revenue: grouped[key],
-            profit: grouped[key] * 0.7, // Laba 70% dari harga
+            profit: grouped[key] * 0.7, 
             height: `${(grouped[key] / maxRev) * 100}%`
         };
     });
@@ -1363,11 +1390,11 @@ function App() {
                             {/* TOMBOL VERIFIKASI ADMIN */}
                             <td className="p-5 text-right w-40">
                                {tx.status !== 'checked-in' ? (
-                                 <button onClick={() => handleCheckIn(tx.id)} className="bg-blue-600 text-white w-full py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 transition-colors mb-2 shadow-sm cursor-pointer">
+                                 <button onClick={() => verifyTicket(tx)} className="bg-blue-600 text-white w-full py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 transition-colors mb-2 shadow-sm cursor-pointer">
                                    Verifikasi Manual
                                  </button>
                                ) : (
-                                 <span className="bg-green-100 text-green-700 w-full py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest block mb-2 border border-green-200 text-center">
+                                 <span className="bg-green-100 text-green-700 w-full py-2 rounded-lg text-[10px] font-black uppercase tracking-widest block mb-2 border border-green-200 text-center">
                                    Masuk ✅
                                  </span>
                                )}
