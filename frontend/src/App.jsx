@@ -54,7 +54,6 @@ function App() {
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [inputName, setInputName] = useState("");
   const [inputPassword, setInputPassword] = useState("");
-  const [inputPhone, setInputPhone] = useState(""); 
 
   const [showMyTickets, setShowMyTickets] = useState(false);
   const [myTickets, setMyTickets] = useState([]);
@@ -103,7 +102,8 @@ function App() {
 
   const fetchCourts = async () => {
     setIsLoading(true);
-    const { data, error } = await supabase.from('courts').select('*');
+    // PERBAIKAN: Mengambil data lapangan SEKALIGUS ulasannya
+    const { data, error } = await supabase.from('courts').select('*, reviews(*)');
     if (!error) setCourts(data);
     setIsLoading(false);
   };
@@ -239,12 +239,6 @@ function App() {
     }
   };
 
-  const sendWhatsAppReminder = (bookingData) => {
-    const userPhone = currentUser.phone || "62"; 
-    const message = `Halo ${currentUser.name}! 🏸%0A%0ABooking kamu di *MCKING-STAR* berhasil!%0A📅 Tanggal: ${bookingData.date}%0A⏰ Jam: ${bookingData.startTime}%0A🏟️ Lapangan: ${selectedCourt?.name || "Lapangan"}%0A%0A_Jangan telat ya, sampai jumpa di lapangan!_`;
-    window.open(`https://wa.me/${userPhone}?text=${message}`, '_blank');
-  };
-
   // ==========================================
   // 3. BOOKING LOGIC & MABAR
   // ==========================================
@@ -304,7 +298,6 @@ function App() {
       }
 
       Swal.fire("Booking Berhasil! 🎉", `Saldo terpotong Rp ${perOrang.toLocaleString('id-ID')}`, "success");
-      sendWhatsAppReminder({ date: selectedDate, startTime: bookingModal.time });
       setCurrentUser({ ...currentUser, balance: newBalance, xp: newXP });
       setBookedSlots([...bookedSlots, bookingModal.time]);
       setBookingModal({ show: false, time: "" });
@@ -414,10 +407,35 @@ function App() {
     Swal.fire("Berhasil Daftar!", "Siapkan raketmu!", "success");
   };
 
-  const submitReview = () => {
-    Swal.fire("Terima Kasih! 🌟", "Ulasan kamu telah kami simpan.", "success");
-    setReviewModal({ show: false, courtId: null });
-    setReviewComment("");
+  // PERBAIKAN: Fungsi Submit Review yang Nyata (Insert ke database)
+  const submitReview = async () => {
+    if (!reviewComment.trim()) return Swal.fire("Peringatan", "Komentar tidak boleh kosong.", "warning");
+
+    const { error } = await supabase.from('reviews').insert([{
+      court_id: reviewModal.courtId,
+      player_name: currentUser.name,
+      rating: reviewRating,
+      comment: reviewComment
+    }]);
+
+    if (!error) {
+      Swal.fire("Terima Kasih! 🌟", "Ulasan kamu telah kami simpan.", "success");
+      setReviewModal({ show: false, courtId: null });
+      setReviewComment("");
+      setReviewRating(5);
+      
+      fetchCourts(); // Memperbarui data lapangan agar rating terbaru langsung muncul
+      
+      // Jika user sedang membuka modal lapangan tersebut, perbarui juga state selectedCourt
+      if (selectedCourt && selectedCourt.id === reviewModal.courtId) {
+        setSelectedCourt(prev => ({
+          ...prev,
+          reviews: [...(prev.reviews || []), { player_name: currentUser.name, rating: reviewRating, comment: reviewComment }]
+        }));
+      }
+    } else {
+      Swal.fire("Gagal", error.message, "error");
+    }
   };
 
   // ==========================================
@@ -429,9 +447,7 @@ function App() {
     const { data: users } = await supabase.from('users').select('*').order('balance', { ascending: false }).limit(5);
 
     const totalRev = txs.reduce((acc, curr) => acc + curr.price, 0);
-    setRevenueData({
-      totalRevenue: totalRev, totalTransactions: txs.length, allTransactions: txs, recentTransactions: txs.slice(0, 10) 
-    });
+    setRevenueData({ totalRevenue: totalRev, totalTransactions: txs.length, allTransactions: txs, recentTransactions: txs.slice(0, 10) });
     setLoyalCustomers(users.map(u => ({ name: u.name, totalContribution: u.balance })));
     setShowAdminDashboard(true);
   };
@@ -489,10 +505,8 @@ function App() {
 
   const processChartData = () => {
     if (!revenueData || !revenueData.allTransactions || !revenueData.allTransactions.length) return [];
-    
     const isDaily = chartFilter === 'harian' || chartFilter === '1_bulan';
     const grouped = {};
-    
     revenueData.allTransactions.forEach(tx => {
         if(!tx.booking_date) return;
         const key = isDaily ? tx.booking_date : tx.booking_date.substring(0, 7); 
@@ -500,28 +514,17 @@ function App() {
         if (!grouped[key]) grouped[key] = 0;
         grouped[key] += price;
     });
-
     const sortedKeys = Object.keys(grouped).sort();
-    let displayKeys = [];
-    
-    if (chartFilter === 'harian') displayKeys = sortedKeys.slice(-7);
-    else if (chartFilter === '1_bulan') displayKeys = sortedKeys.slice(-30);
-    else if (chartFilter === '3_bulan') displayKeys = sortedKeys.slice(-3); 
-    else if (chartFilter === '6_bulan') displayKeys = sortedKeys.slice(-6); 
-
+    let displayKeys = chartFilter === 'harian' ? sortedKeys.slice(-7) : chartFilter === '1_bulan' ? sortedKeys.slice(-30) : chartFilter === '3_bulan' ? sortedKeys.slice(-3) : sortedKeys.slice(-6);
     const maxRev = Math.max(...displayKeys.map(k => grouped[k]), 1);
-
     return displayKeys.map(key => {
         let label = key;
-        if (isDaily) {
-            label = key.substring(8); 
-            if (chartFilter === 'harian') label = key.substring(5); 
-        } else {
+        if (isDaily) label = chartFilter === 'harian' ? key.substring(5) : key.substring(8);
+        else {
             const [yyyy, mm] = key.split('-');
             const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
-            label = `${monthNames[parseInt(mm)-1]} ${yyyy.substring(2)}`; 
+            label = `${monthNames[parseInt(mm)-1]} ${yyyy.substring(2)}`;
         }
-
         return { label, revenue: grouped[key], profit: grouped[key] * 0.7, height: `${(grouped[key] / maxRev) * 100}%` };
     });
   };
@@ -605,25 +608,31 @@ function App() {
                        <svg className="absolute w-full h-3 sm:h-4 -bottom-1 sm:-bottom-2 left-0 text-amber-400 drop-shadow-sm" viewBox="0 0 100 10" preserveAspectRatio="none"><path d="M0 5 Q 50 15 100 5" stroke="currentColor" strokeWidth="4" fill="transparent" strokeLinecap="round"/></svg>
                     </span>
                  </h2>
-                 <p className="text-slate-500 font-medium text-lg max-w-xl mx-auto mt-6">Fasilitas premium standar BWF dan pencahayaan optimal. Booking sekarang sebelum keduluan tim lain!</p>
+                 <p className="text-slate-500 font-medium text-lg max-w-xl mx-auto mt-6">Fasilitas premium standar BWF dan pencahayaan optimal.</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                {courts.map((court) => (
-                  <div key={court.id} className="bg-white border border-slate-100 rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:-translate-y-2 transition-all duration-300 relative overflow-hidden group">
-                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-400 to-indigo-500 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-2xl font-black text-slate-800 group-hover:text-blue-700 transition-colors">{court.name}</h3>
-                      <div className="flex items-center gap-1 bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-xl shadow-sm">
-                        <span className="text-amber-500 text-sm drop-shadow-sm">⭐</span><span className="text-sm font-black text-amber-700">5.0</span>
+                {courts.map((court) => {
+                  // PERBAIKAN: Hitung rata-rata rating dinamis
+                  const courtReviews = court.reviews || [];
+                  const avgRating = courtReviews.length > 0 ? (courtReviews.reduce((acc, curr) => acc + curr.rating, 0) / courtReviews.length).toFixed(1) : "Baru";
+
+                  return (
+                    <div key={court.id} className="bg-white border border-slate-100 rounded-3xl p-6 shadow-md hover:-translate-y-2 transition-all duration-300 relative overflow-hidden group">
+                      <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-400 to-indigo-500 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+                      <div className="flex justify-between items-start mb-4">
+                        <h3 className="text-2xl font-black text-slate-800 group-hover:text-blue-700 transition-colors">{court.name}</h3>
+                        <div className="flex items-center gap-1 bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-xl shadow-sm">
+                          <span className="text-amber-500 text-sm drop-shadow-sm">⭐</span><span className="text-sm font-black text-amber-700">{avgRating}</span>
+                        </div>
                       </div>
+                      <div className="mb-6">
+                         <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">Harga Mulai</p>
+                         <p className="text-3xl font-black text-blue-600">Rp {court.base_price?.toLocaleString('id-ID')}<span className="text-sm text-slate-400 font-normal">/jam</span></p>
+                      </div>
+                      <button onClick={() => setSelectedCourt(court)} className="w-full bg-slate-50 hover:bg-blue-600 text-slate-700 hover:text-white border border-slate-200 py-3 rounded-xl font-bold text-lg transition-all duration-300 cursor-pointer group-hover:shadow-lg group-hover:shadow-blue-500/30">Cek Jadwal →</button>
                     </div>
-                    <div className="mb-6">
-                       <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">Harga Mulai</p>
-                       <p className="text-3xl font-black text-blue-600">Rp {court.base_price?.toLocaleString('id-ID')}<span className="text-sm text-slate-400 font-normal">/jam</span></p>
-                    </div>
-                    <button onClick={() => setSelectedCourt(court)} className="w-full bg-slate-50 hover:bg-blue-600 text-slate-700 hover:text-white border border-slate-200 py-3 rounded-xl font-bold text-lg transition-all duration-300 cursor-pointer group-hover:shadow-lg group-hover:shadow-blue-500/30">Cek Jadwal →</button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           ) : (
@@ -664,6 +673,24 @@ function App() {
                   );
                 })}
               </div>
+
+              {/* PERBAIKAN: BAGIAN ULASAN DI DALAM MODAL JADWAL */}
+              {selectedCourt.reviews && selectedCourt.reviews.length > 0 && (
+                <div className="mt-12 bg-slate-50 p-6 md:p-8 rounded-3xl border border-slate-100 shadow-sm">
+                  <h3 className="font-black text-2xl mb-6 text-slate-800 flex items-center gap-2">💬 Ulasan Pemain</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {selectedCourt.reviews.slice().reverse().map((r, i) => (
+                      <div key={i} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-black text-slate-700 bg-slate-100 px-3 py-1 rounded-lg text-xs">{r.player_name}</span>
+                          <span className="text-amber-400 text-sm drop-shadow-sm">{"⭐".repeat(r.rating)}</span>
+                        </div>
+                        <p className="text-slate-600 font-medium italic mt-3 text-sm leading-relaxed">"{r.comment}"</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )
         )}
@@ -1053,7 +1080,7 @@ function App() {
                             <span className="bg-amber-100 text-amber-800 text-[10px] px-3 py-1 rounded-lg font-black uppercase shadow-sm border border-amber-200">{currentUser.level || "Bronze"}</span>
                          </div>
 
-                         {/* STATUS SCAN QR CODE */}
+                         {/* PERUBAHAN STATUS SCAN QR CODE */}
                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 mb-5 mt-6 shadow-inner transition-transform group-hover:scale-105 flex justify-center items-center h-36 w-36 mx-auto">
                             {ticket.status === 'checked-in' ? (
                                <div className="text-center">
