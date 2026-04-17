@@ -274,6 +274,27 @@ function App() {
       setCurrentUser({ ...currentUser, balance: newBalance, xp: newXP });
       setBookedSlots([...bookedSlots, bookingModal.time]);
       setBookingModal({ show: false, time: "" });
+    }if (!error) {
+      const newBalance = currentUser.balance - perOrang;
+      const newXP = (currentUser.xp || 0) + 10;
+      await supabase.from('users').update({ balance: newBalance, xp: newXP }).eq('id', currentUser.id);
+
+      if (friendsArray.length > 0) {
+        const debtRecords = friendsArray.map(friend => ({
+          debtor_name: friend, creditor_name: currentUser.name, amount: perOrang, is_paid: false
+        }));
+        await supabase.from('debts').insert(debtRecords);
+      }
+
+      Swal.fire("Booking Berhasil! 🎉", `Saldo terpotong Rp ${perOrang.toLocaleString('id-ID')}`, "success");
+      sendWhatsAppReminder({ date: selectedDate, startTime: bookingModal.time });
+      setCurrentUser({ ...currentUser, balance: newBalance, xp: newXP });
+      setBookedSlots([...bookedSlots, bookingModal.time]);
+      setBookingModal({ show: false, time: "" });
+    } else {
+      // Memunculkan pesan asli dari Supabase agar kita tahu apa yang salah
+      Swal.fire("Gagal Menyimpan Database!", error.message, "error");
+      console.error(error);
     }
   };
 
