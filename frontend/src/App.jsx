@@ -10,6 +10,7 @@ const getLocalTodayDateString = () => {
   return now.toISOString().split('T')[0];
 };
 
+// Komponen Kamera QR Scanner
 const QrReader = ({ onScanSuccess }) => {
   useEffect(() => {
     const scanner = new Html5QrcodeScanner("reader", {
@@ -92,31 +93,9 @@ function App() {
   const [showTopUpModal, setShowTopUpModal] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState("");
   const [promoCode, setPromoCode] = useState(""); 
+  
   const [scanInput, setScanInput] = useState("");
-
   const [showCamera, setShowCamera] = useState(false);
-
-  const handleCameraScan = async (decodedText) => {
-    setShowCamera(false); // Tutup kamera
-    
-    // Cek database menggunakan teks hasil scan
-    const { data: ticket, error } = await supabase
-      .from('bookings')
-      .select('*')
-      .eq('id', decodedText.trim())
-      .single();
-
-    if (error || !ticket) {
-      return Swal.fire("Tiket Tidak Valid!", "QR Code tidak dikenali oleh sistem.", "error");
-    }
-
-    if (ticket.status === 'checked-in') {
-      return Swal.fire("Sudah Digunakan!", "Tiket ini sudah pernah di-scan sebelumnya.", "warning");
-    }
-
-    // Jika valid, jalankan fungsi check-in
-    await handleCheckIn(ticket.id);
-  };
 
   const operationalHours = Array.from({ length: 15 }, (_, i) => `${(i + 8).toString().padStart(2, '0')}:00`);
 
@@ -174,7 +153,7 @@ function App() {
   };
 
   // ==========================================
-  // 1B. REALTIME LISTENER (FITUR BARU SCAN BARCODE)
+  // 1B. REALTIME LISTENER (NOTIFIKASI USER TIKET SCAN)
   // ==========================================
   useEffect(() => {
     if (!currentUser) return;
@@ -227,6 +206,7 @@ function App() {
     if (!amount || amount <= 0) return Swal.fire("Oops!", "Nominal tidak valid!", "warning");
 
     let bonus = 0;
+    // FITUR: Eksekusi Kode Promo
     if (promoCode.toUpperCase() === "MCKINGPRO") {
       bonus = 50000;
       Swal.fire("Voucher Berhasil! 🎉", "Kamu mendapat bonus saldo Rp 50.000!", "success");
@@ -266,6 +246,7 @@ function App() {
       const rawFriends = bookingFriends.split(',').map(n => n.trim()).filter(n => n !== "" && n.toLowerCase() !== currentUser.name.toLowerCase());
       friendsArray = [...new Set(rawFriends)]; 
       
+      // Verifikasi nama teman dari database (Anti-Cheat)
       if (friendsArray.length > 0) {
         const { data: validUsers } = await supabase.from('users').select('name').in('name', friendsArray);
         if (!validUsers || validUsers.length !== friendsArray.length) {
@@ -325,25 +306,7 @@ function App() {
       setCurrentUser({ ...currentUser, balance: newBalance, xp: newXP });
       setBookedSlots([...bookedSlots, bookingModal.time]);
       setBookingModal({ show: false, time: "" });
-    }if (!error) {
-      const newBalance = currentUser.balance - perOrang;
-      const newXP = (currentUser.xp || 0) + 10;
-      await supabase.from('users').update({ balance: newBalance, xp: newXP }).eq('id', currentUser.id);
-
-      if (friendsArray.length > 0) {
-        const debtRecords = friendsArray.map(friend => ({
-          debtor_name: friend, creditor_name: currentUser.name, amount: perOrang, is_paid: false
-        }));
-        await supabase.from('debts').insert(debtRecords);
-      }
-
-      Swal.fire("Booking Berhasil! 🎉", `Saldo terpotong Rp ${perOrang.toLocaleString('id-ID')}`, "success");
-      sendWhatsAppReminder({ date: selectedDate, startTime: bookingModal.time });
-      setCurrentUser({ ...currentUser, balance: newBalance, xp: newXP });
-      setBookedSlots([...bookedSlots, bookingModal.time]);
-      setBookingModal({ show: false, time: "" });
     } else {
-      // Memunculkan pesan asli dari Supabase agar kita tahu apa yang salah
       Swal.fire("Gagal Menyimpan Database!", error.message, "error");
       console.error(error);
     }
@@ -453,7 +416,7 @@ function App() {
   };
 
   // ==========================================
-  // 5. ADMIN ANALYTICS & COURT MANAGEMENT
+  // 5. ADMIN ANALYTICS, COURT MANAGEMENT & SCANNER
   // ==========================================
 
   const loadAdminData = async () => {
@@ -489,7 +452,7 @@ function App() {
     }
   };
 
-  // FUNGSI VERIFIKASI ADMIN (FITUR BARU)
+  // FUNGSI VERIFIKASI ADMIN (SCAN / MANUAL CLICK)
   const handleCheckIn = async (bookingId) => {
     const { error } = await supabase
       .from('bookings')
@@ -502,32 +465,18 @@ function App() {
     }
   };
 
-  const handleScanSubmit = async (e) => {
-    e.preventDefault();
-    if (!scanInput.trim()) return;
-
-    // Cek apakah ID tiket ada di database
-    const { data: ticket, error } = await supabase
-      .from('bookings')
-      .select('*, courts(name)')
-      .eq('id', scanInput.trim())
-      .single();
+  const handleCameraScan = async (decodedText) => {
+    setShowCamera(false); 
+    const { data: ticket, error } = await supabase.from('bookings').select('*').eq('id', decodedText.trim()).single();
 
     if (error || !ticket) {
-      Swal.fire("Tiket Tidak Valid!", "QR Code tidak dikenali oleh sistem.", "error");
-      setScanInput("");
-      return;
+      return Swal.fire("Tiket Tidak Valid!", "QR Code tidak dikenali oleh sistem.", "error");
     }
 
     if (ticket.status === 'checked-in') {
-      Swal.fire("Sudah Digunakan!", "Tiket ini sudah pernah di-scan sebelumnya.", "warning");
-      setScanInput("");
-      return;
+      return Swal.fire("Sudah Digunakan!", "Tiket ini sudah pernah di-scan sebelumnya.", "warning");
     }
-
-    // Jika valid, jalankan fungsi check-in
     await handleCheckIn(ticket.id);
-    setScanInput(""); // Kosongkan input setelah berhasil
   };
 
   const calculateXPWidth = () => {
@@ -1071,7 +1020,7 @@ function App() {
                             <span className="bg-amber-100 text-amber-800 text-[10px] px-3 py-1 rounded-lg font-black uppercase shadow-sm border border-amber-200">{currentUser.level || "Bronze"}</span>
                          </div>
 
-                         {/* PERUBAHAN STATUS SCAN QR CODE */}
+                         {/* STATUS SCAN QR CODE */}
                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 mb-5 mt-6 shadow-inner transition-transform group-hover:scale-105 flex justify-center items-center h-36 w-36 mx-auto">
                             {ticket.status === 'checked-in' ? (
                                <div className="text-center">
@@ -1259,26 +1208,35 @@ function App() {
                    <div className="flex items-center gap-3">
                       <span className="p-3 bg-slate-100 text-slate-600 rounded-xl text-xl">📜</span>
                       <h3 className="font-black text-2xl text-slate-800 tracking-tight">Riwayat Transaksi</h3>
-                      {/* KOTAK SCANNER QR CODE */}
-<div className="mb-6 bg-slate-50 p-6 rounded-3xl border border-slate-200 shadow-inner">
-  <div className="flex justify-between items-center mb-4">
-     <div>
-        <h4 className="text-sm font-black uppercase tracking-widest text-slate-600">📷 Scan QR Code Tiket</h4>
-        <p className="text-xs font-bold text-slate-400">Arahkan kamera HP ke layar pemain.</p>
-     </div>
-     <button onClick={() => setShowCamera(!showCamera)} className={`px-6 py-3 rounded-xl font-black text-sm shadow-md transition-all ${showCamera ? 'bg-red-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-500'}`}>
-        {showCamera ? 'Tutup Kamera ✖' : 'Buka Kamera 📷'}
-     </button>
-  </div>
-
-  {/* Area Kamera akan muncul di sini jika tombol ditekan */}
-  {showCamera && (
-    <div className="mt-4 max-w-md mx-auto animate-in zoom-in-95">
-       <QrReader onScanSuccess={handleCameraScan} />
-    </div>
-  )}
-</div>
                    </div>
+                   
+                   {/* KOTAK SCANNER QR CODE (MOBILE RESPONSIVE) */}
+                   <div className="w-full sm:w-auto bg-slate-800 p-4 rounded-2xl shadow-inner text-white flex flex-col sm:flex-row justify-between items-center gap-4">
+                      <div className="text-center sm:text-left">
+                         <h4 className="text-xs font-black uppercase tracking-widest text-blue-400">📷 Scan Tiket Pemain</h4>
+                      </div>
+                      <button 
+                         onClick={() => setShowCamera(!showCamera)} 
+                         className={`w-full sm:w-auto px-4 py-2 rounded-xl font-black text-xs shadow-md transition-all cursor-pointer ${showCamera ? 'bg-red-500 text-white hover:bg-red-400' : 'bg-blue-600 text-white hover:bg-blue-500'}`}
+                      >
+                         {showCamera ? 'Tutup Kamera ✖' : 'Buka Kamera 📷'}
+                      </button>
+                   </div>
+                </div>
+
+                {/* Area Kamera */}
+                {showCamera && (
+                  <div className="p-6 bg-slate-100 border-b border-slate-200">
+                     <div className="w-full max-w-sm mx-auto overflow-hidden rounded-2xl border-4 border-slate-800 bg-black animate-in zoom-in-95 relative">
+                        <div className="absolute top-2 right-2 z-10">
+                           <span className="bg-red-500 text-white text-[10px] font-black px-2 py-1 rounded-md animate-pulse">REC</span>
+                        </div>
+                        <QrReader onScanSuccess={handleCameraScan} />
+                     </div>
+                  </div>
+                )}
+
+                <div className="p-4 bg-red-50 text-right border-b border-slate-100">
                   <button onClick={async () => { 
                     const confirmResult = await Swal.fire({
                       title: 'Kosongkan Data?',
@@ -1290,8 +1248,8 @@ function App() {
                       Swal.fire("Dibersihkan!", "Riwayat transaksi telah dikosongkan.", "success");
                       setRevenueData({ totalRevenue: 0, totalTransactions: 0, recentTransactions: [] }); 
                     } 
-                  }} className="bg-red-50 text-red-500 border border-red-100 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-colors cursor-pointer flex items-center gap-2">
-                    <span>🗑️</span> Kosongkan Data
+                  }} className="inline-flex items-center gap-2 bg-white text-red-500 border border-red-200 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-colors cursor-pointer shadow-sm">
+                    <span>🗑️</span> Kosongkan Data Transaksi
                   </button>
                 </div>
 
@@ -1330,11 +1288,11 @@ function App() {
                             {/* TOMBOL VERIFIKASI ADMIN */}
                             <td className="p-5 text-right w-40">
                                {tx.status !== 'checked-in' ? (
-                                 <button onClick={() => handleCheckIn(tx.id)} className="bg-blue-600 text-white w-full py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 transition-colors mb-2 shadow-sm cursor-pointer">
-                                   Verifikasi
+                                 <button onClick={() => handleCheckIn(tx.id)} className="bg-blue-600 text-white w-full py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 transition-colors mb-2 shadow-sm cursor-pointer">
+                                   Verifikasi Manual
                                  </button>
                                ) : (
-                                 <span className="bg-green-100 text-green-700 w-full py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest block mb-2 border border-green-200 text-center">
+                                 <span className="bg-green-100 text-green-700 w-full py-2 rounded-lg text-[10px] font-black uppercase tracking-widest block mb-2 border border-green-200 text-center">
                                    Masuk ✅
                                  </span>
                                )}
