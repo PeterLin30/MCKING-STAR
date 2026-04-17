@@ -27,7 +27,6 @@ const QrReader = ({ onScanSuccess }) => {
       (error) => { /* Abaikan error berulang saat mencari QR */ }
     );
 
-    // Bersihkan kamera jika admin menutup menu
     return () => {
       scanner.clear().catch(e => console.error("Gagal menutup kamera", e));
     };
@@ -60,7 +59,7 @@ function App() {
   const [showMyTickets, setShowMyTickets] = useState(false);
   const [myTickets, setMyTickets] = useState([]);
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
-  const [revenueData, setRevenueData] = useState({ totalRevenue: 0, totalTransactions: 0, recentTransactions: [] });
+  const [revenueData, setRevenueData] = useState({ totalRevenue: 0, totalTransactions: 0, allTransactions: [], recentTransactions: [] });
   const [loyalCustomers, setLoyalCustomers] = useState([]); 
 
   const [bookingModal, setBookingModal] = useState({ show: false, time: "" });
@@ -153,7 +152,7 @@ function App() {
   };
 
   // ==========================================
-  // 1B. REALTIME LISTENER (NOTIFIKASI USER TIKET SCAN)
+  // 1B. REALTIME LISTENER (NOTIFIKASI TIKET SCAN)
   // ==========================================
   useEffect(() => {
     if (!currentUser) return;
@@ -172,7 +171,6 @@ function App() {
               icon: 'success',
               timer: 5000
             });
-            // Update daftar tiket agar QR Code berubah jadi tanda ✅
             loadMyTickets(); 
           }
         }
@@ -183,19 +181,49 @@ function App() {
   }, [currentUser, courts]);
 
   // ==========================================
-  // 2. AUTH & USER ACTIONS
+  // 2. AUTH & USER ACTIONS (DENGAN AUTO-REGISTER & BONUS 100RB)
   // ==========================================
 
   const submitLogin = async (e) => {
     e.preventDefault(); 
     if (!inputName.trim() || !inputPassword.trim()) return Swal.fire("Oops!", "Lengkapi data!", "warning");
 
-    const { data, error } = await supabase.from('users').select('*').eq('name', inputName).eq('password', inputPassword).single();
+    // Cari apakah user sudah terdaftar
+    const { data: users, error: searchError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('name', inputName);
 
-    if (error || !data) return Swal.fire("Gagal Login!", "Nama atau Password salah.", "error");
+    const existingUser = users && users.length > 0 ? users[0] : null;
 
-    Swal.fire("Berhasil Masuk!", `Selamat datang ${data.name}`, "success");
-    setCurrentUser(data);
+    if (existingUser) {
+      // User sudah ada, lakukan pencocokan password
+      if (existingUser.password !== inputPassword) {
+        return Swal.fire("Gagal Login!", "Password salah.", "error");
+      }
+      Swal.fire("Berhasil Masuk!", `Selamat datang kembali, ${existingUser.name} 👋`, "success");
+      setCurrentUser(existingUser);
+    } else {
+      // User belum ada, lakukan AUTO-REGISTER
+      const { data: newUser, error: insertError } = await supabase
+        .from('users')
+        .insert([{ 
+          name: inputName, 
+          password: inputPassword, 
+          role: 'user', 
+          balance: 100000, // <--- BONUS AWAL RP 100.000
+          xp: 0, 
+          level: 'Bronze 🥉' 
+        }])
+        .select()
+        .single();
+
+      if (insertError) return Swal.fire("Gagal Daftar!", insertError.message, "error");
+
+      Swal.fire("Akun Baru Dibuat! 🎉", `Selamat! Kamu dapat bonus saldo awal Rp 100.000. Selamat datang di MCKING-STAR, ${newUser.name}!`, "success");
+      setCurrentUser(newUser);
+    }
+
     setShowLoginForm(false); 
     setInputName(""); setInputPassword("");
   };
@@ -285,7 +313,7 @@ function App() {
       max_players: maxPlayers,
       split_members: splitMembers,
       join_price: customJoinPrice,
-      status: 'booked', // Default status
+      status: 'booked',
       additional_items: { racket: racketCount, kok: kokCount }
     }]);
 
@@ -388,11 +416,21 @@ function App() {
   const handleCreateTournament = async (e) => {
     e.preventDefault();
     if (!tInputName || !tInputDate || !tInputFee) return Swal.fire("Perhatian!", "Lengkapi data turnamen!", "warning");
-    const { error } = await supabase.from('tournaments').insert([{ title: tInputName, date: tInputDate, fee: Number(tInputFee), participants: [] }]);
+    
+    const { error } = await supabase.from('tournaments').insert([{ 
+      title: tInputName, 
+      date: tInputDate, 
+      fee: Number(tInputFee), 
+      participants: [] 
+    }]);
+
     if (!error) {
       Swal.fire("Sahkan Turnamen! 🚀", "Turnamen resmi dibuka.", "success");
       setShowTournamentModal(false); setTInputName(""); setTInputDate(""); setTInputFee("");
       loadTournaments();
+    } else {
+      Swal.fire("Gagal Dibuat!", `Error: ${error.message}. Pastikan tabel tournaments memiliki kolom 'date' dan 'fee'`, "error");
+      console.error(error);
     }
   };
 
@@ -416,7 +454,7 @@ function App() {
   };
 
   // ==========================================
-  // 5. ADMIN ANALYTICS, COURT MANAGEMENT & SCANNER
+  // 5. ADMIN ANALYTICS & COURT MANAGEMENT
   // ==========================================
 
   const loadAdminData = async () => {
@@ -424,10 +462,12 @@ function App() {
     const { data: users } = await supabase.from('users').select('*').order('balance', { ascending: false }).limit(5);
 
     const totalRev = txs.reduce((acc, curr) => acc + curr.price, 0);
+    
     setRevenueData({
       totalRevenue: totalRev,
       totalTransactions: txs.length,
-      recentTransactions: txs.slice(0, 10) // Tampilkan 10 transaksi terakhir
+      allTransactions: txs, 
+      recentTransactions: txs.slice(0, 10) // Hanya tampilkan 10 di tabel
     });
     setLoyalCustomers(users.map(u => ({ name: u.name, totalContribution: u.balance })));
     setShowAdminDashboard(true);
@@ -452,7 +492,6 @@ function App() {
     }
   };
 
-  // FUNGSI VERIFIKASI ADMIN (SCAN / MANUAL CLICK)
   const handleCheckIn = async (bookingId) => {
     const { error } = await supabase
       .from('bookings')
@@ -461,7 +500,7 @@ function App() {
 
     if (!error) {
       Swal.fire("Berhasil!", "Pemain telah diverifikasi masuk.", "success");
-      loadAdminData(); // Refresh data admin
+      loadAdminData(); 
     }
   };
 
@@ -469,13 +508,9 @@ function App() {
     setShowCamera(false); 
     const { data: ticket, error } = await supabase.from('bookings').select('*').eq('id', decodedText.trim()).single();
 
-    if (error || !ticket) {
-      return Swal.fire("Tiket Tidak Valid!", "QR Code tidak dikenali oleh sistem.", "error");
-    }
-
-    if (ticket.status === 'checked-in') {
-      return Swal.fire("Sudah Digunakan!", "Tiket ini sudah pernah di-scan sebelumnya.", "warning");
-    }
+    if (error || !ticket) return Swal.fire("Tiket Tidak Valid!", "QR Code tidak dikenali oleh sistem.", "error");
+    if (ticket.status === 'checked-in') return Swal.fire("Sudah Digunakan!", "Tiket ini sudah pernah di-scan sebelumnya.", "warning");
+    
     await handleCheckIn(ticket.id);
   };
 
@@ -484,13 +519,51 @@ function App() {
     return `${Math.min((xp % 100), 100)}%`; 
   };
 
+  // LOGIKA CHART DINAMIS (Memproses transaksi Supabase sesuai filter dropdown)
   const processChartData = () => {
-    if (!revenueData.recentTransactions.length) return [];
-    return [
-      { label: 'Sen', revenue: 500000, profit: 350000, height: '70%' },
-      { label: 'Sel', revenue: 300000, profit: 210000, height: '40%' },
-      { label: 'Rab', revenue: 800000, profit: 560000, height: '90%' },
-    ];
+    if (!revenueData || !revenueData.allTransactions || !revenueData.allTransactions.length) return [];
+    
+    const isDaily = chartFilter === 'harian' || chartFilter === '1_bulan';
+    const grouped = {};
+    
+    revenueData.allTransactions.forEach(tx => {
+        if(!tx.booking_date) return;
+        const key = isDaily ? tx.booking_date : tx.booking_date.substring(0, 7); // yyyy-mm
+        const price = tx.price || 0;
+        
+        if (!grouped[key]) grouped[key] = 0;
+        grouped[key] += price;
+    });
+
+    const sortedKeys = Object.keys(grouped).sort();
+    let displayKeys = [];
+    
+    // Filter berdasarkan Dropdown
+    if (chartFilter === 'harian') displayKeys = sortedKeys.slice(-7);
+    else if (chartFilter === '1_bulan') displayKeys = sortedKeys.slice(-30);
+    else if (chartFilter === '3_bulan') displayKeys = sortedKeys.slice(-3); // 3 Bulan terakhir
+    else if (chartFilter === '6_bulan') displayKeys = sortedKeys.slice(-6); // 6 Bulan terakhir
+
+    const maxRev = Math.max(...displayKeys.map(k => grouped[k]), 1);
+
+    return displayKeys.map(key => {
+        let label = key;
+        if (isDaily) {
+            label = key.substring(8); 
+            if (chartFilter === 'harian') label = key.substring(5); 
+        } else {
+            const [yyyy, mm] = key.split('-');
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+            label = `${monthNames[parseInt(mm)-1]} ${yyyy.substring(2)}`; 
+        }
+
+        return {
+            label,
+            revenue: grouped[key],
+            profit: grouped[key] * 0.7, // Laba 70% dari harga
+            height: `${(grouped[key] / maxRev) * 100}%`
+        };
+    });
   };
 
   // ==========================================
@@ -1020,7 +1093,7 @@ function App() {
                             <span className="bg-amber-100 text-amber-800 text-[10px] px-3 py-1 rounded-lg font-black uppercase shadow-sm border border-amber-200">{currentUser.level || "Bronze"}</span>
                          </div>
 
-                         {/* STATUS SCAN QR CODE */}
+                         {/* PERUBAHAN STATUS SCAN QR CODE */}
                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 mb-5 mt-6 shadow-inner transition-transform group-hover:scale-105 flex justify-center items-center h-36 w-36 mx-auto">
                             {ticket.status === 'checked-in' ? (
                                <div className="text-center">
@@ -1140,6 +1213,8 @@ function App() {
                     <select value={chartFilter} onChange={(e) => setChartFilter(e.target.value)} className="bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer">
                         <option value="harian">7 Hari Terakhir</option>
                         <option value="1_bulan">1 Bulan Terakhir</option>
+                        <option value="3_bulan">3 Bulan Terakhir</option>
+                        <option value="6_bulan">6 Bulan Terakhir</option>
                     </select>
                 </div>
                 
@@ -1246,7 +1321,7 @@ function App() {
                     if(confirmResult.isConfirmed) { 
                       await supabase.from('bookings').delete().neq('id', '00000000-0000-0000-0000-000000000000'); 
                       Swal.fire("Dibersihkan!", "Riwayat transaksi telah dikosongkan.", "success");
-                      setRevenueData({ totalRevenue: 0, totalTransactions: 0, recentTransactions: [] }); 
+                      setRevenueData({ totalRevenue: 0, totalTransactions: 0, allTransactions: [], recentTransactions: [] }); 
                     } 
                   }} className="inline-flex items-center gap-2 bg-white text-red-500 border border-red-200 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-colors cursor-pointer shadow-sm">
                     <span>🗑️</span> Kosongkan Data Transaksi
@@ -1288,11 +1363,11 @@ function App() {
                             {/* TOMBOL VERIFIKASI ADMIN */}
                             <td className="p-5 text-right w-40">
                                {tx.status !== 'checked-in' ? (
-                                 <button onClick={() => handleCheckIn(tx.id)} className="bg-blue-600 text-white w-full py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 transition-colors mb-2 shadow-sm cursor-pointer">
+                                 <button onClick={() => handleCheckIn(tx.id)} className="bg-blue-600 text-white w-full py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 transition-colors mb-2 shadow-sm cursor-pointer">
                                    Verifikasi Manual
                                  </button>
                                ) : (
-                                 <span className="bg-green-100 text-green-700 w-full py-2 rounded-lg text-[10px] font-black uppercase tracking-widest block mb-2 border border-green-200 text-center">
+                                 <span className="bg-green-100 text-green-700 w-full py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest block mb-2 border border-green-200 text-center">
                                    Masuk ✅
                                  </span>
                                )}
