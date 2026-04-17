@@ -75,3 +75,6 @@ Arsitektur data menggunakan PostgreSQL dengan skema relasional:
    ```env
    VITE_SUPABASE_URL=your_supabase_url
    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+5. Jalankan aplikasi:
+   ```bash
+   npm run dev
