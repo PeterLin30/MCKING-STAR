@@ -72,14 +72,3 @@ Seluruh logika data dikelola menggunakan PostgreSQL di Supabase dengan tabel uta
 
 ---
 
-## 👨‍💻 Cara Menjalankan Lokal
-1. Clone repository: `git clone [link-repo-anda]`
-2. Masuk ke folder: `cd UTS-PPLT`
-3. Install dependencies: `npm install`
-4. Konfigurasi `.env`:
-   ```env
-   VITE_SUPABASE_URL=your_supabase_url
-   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-5. Jalankan aplikasi:
-   ```bash
-   npm run dev
