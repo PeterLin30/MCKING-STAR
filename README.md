@@ -8,7 +8,7 @@ Dibangun dengan arsitektur modern Jamstack, aplikasi ini memisahkan sisi fronten
 
 ## 🚀 Demo & Deployment
 Aplikasi telah di-deploy dan dapat diakses secara real-time melalui tautan berikut:
-
+* **Video Demo:** https://mikroskilacid-my.sharepoint.com/:v:/g/personal/peter_lin_students_mikroskil_ac_id/IQBPTdqUrlIdRKuUg9WN9MUaAQwrBzI_8B05bngn-ZNwGVQ?e=Z1z96j&nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJTdHJlYW1XZWJBcHAiLCJyZWZlcnJhbFZpZXciOiJTaGFyZURpYWxvZy1MaW5rIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXcifX0%3D
 * **Live Demo:** [mcking-star.vercel.app](https://mcking-star.vercel.app)
 * **Frontend Hosting:** **Vercel** (Automated Deployment via GitHub)
 * **Backend & Database:** **Supabase** (PostgreSQL & Realtime Engine)
